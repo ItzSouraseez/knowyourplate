@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { db, auth, provider } from './lib/firebase'; 
+import { db, auth, provider } from './lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -55,11 +56,17 @@ export default function Home() {
     try {
       await signOut(auth);
       setRestaurants([]);
+      setSearchQuery('');
     } catch (error) {
       console.error('Logout error:', error);
       setError('Failed to sign out.');
     }
   };
+
+  // Filter restaurants based on search query
+  const filteredRestaurants = restaurants.filter(restaurant =>
+    restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return <div className="container">Loading...</div>;
@@ -75,11 +82,20 @@ export default function Home() {
             <span>Welcome, {user.displayName}</span>
             <button onClick={handleLogout} className="button">Logout</button>
           </div>
+          <div className="search-container">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search restaurants by name..."
+              className="search-input"
+            />
+          </div>
           <div className="restaurant-list">
-            {restaurants.length === 0 ? (
-              <p>No restaurants available.</p>
+            {filteredRestaurants.length === 0 ? (
+              <p>No restaurants found.</p>
             ) : (
-              restaurants.map(restaurant => (
+              filteredRestaurants.map(restaurant => (
                 <Link 
                   href={`/${restaurant.id}`} 
                   key={restaurant.id} 
